@@ -1,23 +1,31 @@
 package main
 
 import (
-	"github.com/gorilla/mux"
-	"log"
-	"net/http"
-	"refactored-robot/internal/controller/handlers"
+	"github.com/gin-gonic/gin"
+	"refactored-robot/internal/controller"
+	"refactored-robot/internal/package/database"
 	"refactored-robot/internal/repository"
+	"refactored-robot/internal/service"
 )
 
 func main() {
-	DB := repository.Init()
-	h := handlers.New(DB)
-	router := mux.NewRouter()
 
-	router.HandleFunc("/users/{id}", h.GetUser).Methods(http.MethodGet)
-	router.HandleFunc("/users", h.AddUser).Methods(http.MethodPost)
-	router.HandleFunc("/users/get/", h.CheckUser).Methods(http.MethodGet)
-	router.HandleFunc("/users/{id}", h.DeleteUser).Methods(http.MethodDelete)
+	DB := database.Init()
 
-	http.ListenAndServe(":8080", router)
-	log.Println(router)
+	router := gin.Default()
+	router.Use(gin.Recovery())
+
+	userRepo := repository.NewUserRepository(DB)
+	userService := service.NewUserService(userRepo)
+	userController := controller.NewUserController(userService)
+
+	userRouter := router.Group("/user")
+	{
+		userRouter.POST("/", userController.Register)
+		userRouter.DELETE("/delete/:id", userController.Delete)
+		userRouter.GET("/get/:id", userController.Get)
+		userRouter.GET("/login", userController.Login)
+	}
+
+	_ = router.Run(":8888")
 }
