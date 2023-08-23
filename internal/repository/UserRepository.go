@@ -72,3 +72,18 @@ func (repo *UserRepository) CheckIfNameExists(name string) bool {
 	err := repo.dbClient.Debug().Model(models.User{}).Find(&user).Where("name = ?", name).Error
 	return errors.Is(err, gorm.ErrRecordNotFound)
 }
+
+func (repo *UserRepository) UploadImage(userID int, image []byte) error {
+	var user models.User
+	result := repo.dbClient.First(&user, userID)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	user.Image = image
+	result = repo.dbClient.Save(&user)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
