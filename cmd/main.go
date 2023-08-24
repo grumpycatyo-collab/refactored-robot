@@ -3,14 +3,14 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"refactored-robot/internal/controller"
-	"refactored-robot/internal/package/database"
 	"refactored-robot/internal/repository"
 	"refactored-robot/internal/service"
+	"refactored-robot/package/database/postgres"
 )
 
 func main() {
 
-	DB := database.Init()
+	DB := postgres.Init()
 
 	router := gin.Default()
 	router.Use(gin.Recovery())

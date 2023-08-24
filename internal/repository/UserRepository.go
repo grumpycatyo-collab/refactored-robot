@@ -4,7 +4,7 @@ import (
 	"errors"
 	"gorm.io/gorm"
 	"log"
-	"refactored-robot/internal/package/models"
+	"refactored-robot/internal/models"
 )
 
 type UserRepository struct {

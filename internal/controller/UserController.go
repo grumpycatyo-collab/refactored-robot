@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"net/http"
-	"refactored-robot/internal/package/models"
+	"refactored-robot/internal/models"
 	"strconv"
 )
 

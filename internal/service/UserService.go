@@ -4,7 +4,7 @@ import (
 	"errors"
 	"golang.org/x/crypto/bcrypt"
 	"log"
-	"refactored-robot/internal/package/models"
+	"refactored-robot/internal/models"
 )
 
 type IUserRepository interface {

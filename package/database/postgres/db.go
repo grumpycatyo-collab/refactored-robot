@@ -1,4 +1,4 @@
-package database
+package postgres
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 	_ "gorm.io/gorm"
 	"log"
-	"refactored-robot/internal/package/models"
+	"refactored-robot/internal/models"
 )
 
 func Init() *gorm.DB {
