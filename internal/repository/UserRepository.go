@@ -73,6 +73,7 @@ func (repo *UserRepository) CheckIfNameExists(name string) bool {
 	return errors.Is(err, gorm.ErrRecordNotFound)
 }
 
+// Noi in baza nu facem nici un upload, doar inscriem
 func (repo *UserRepository) UploadImage(userID int, image []byte) error {
 	var user models.User
 	result := repo.dbClient.First(&user, userID)
