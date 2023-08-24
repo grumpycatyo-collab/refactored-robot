@@ -79,8 +79,6 @@ func (svc *UserService) generatePasswordHash(pass string) (string, error) {
 	return string(hash), nil
 }
 
-// Aceasta metoda noi o mai folosim undeva ?
-// Ar trebui sa fie ne-expotabila
 func (svc *UserService) ComparePasswordHash(hash, pass string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(pass))
 	if err != nil {

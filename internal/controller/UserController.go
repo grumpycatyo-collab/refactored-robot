@@ -148,7 +148,6 @@ func (ctrl *UserController) UploadImage(c *gin.Context) {
 		return
 	}
 
-	// Parse image data from request body
 	imageData, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to read image data"})
