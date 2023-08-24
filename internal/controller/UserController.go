@@ -41,6 +41,8 @@ func (ctrl *UserController) Register(c *gin.Context) {
 
 	err := ctrl.userService.Register(&user)
 	if err != nil {
+
+		// Status 500 sau nu ?
 		c.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
 			"error":   true,
 			"message": err.Error(),
