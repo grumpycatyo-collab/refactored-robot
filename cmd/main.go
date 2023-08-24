@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"refactored-robot/internal/controller"
+	"refactored-robot/internal/middleware"
 	"refactored-robot/internal/repository"
 	"refactored-robot/internal/service"
 	"refactored-robot/package/database/postgres"
@@ -24,9 +25,10 @@ func main() {
 		userRouter.POST("/", userController.Register)
 		userRouter.DELETE("/delete/:id", userController.Delete)
 		userRouter.GET("/get/:id", userController.Get)
-		userRouter.GET("/login", userController.Login)
+		userRouter.POST("/login", userController.Login)
 		userRouter.POST("/setimg/:id", userController.SetImage)
 		userRouter.GET("/getimg/:id", userController.GetImage)
+		userRouter.GET("/validate", middleware.RequireAuth, controller.Validate)
 
 	}
 

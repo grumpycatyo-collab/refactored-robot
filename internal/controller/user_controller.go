@@ -1,13 +1,17 @@
 package controller
 
 import (
+	"context"
 	_ "encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
+	"github.com/golang-jwt/jwt"
 	"io/ioutil"
 	"net/http"
 	"refactored-robot/internal/models"
 	"strconv"
+	"time"
 )
 
 type IUserService interface {
@@ -136,7 +140,33 @@ func (ctrl *UserController) Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, user)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": user.Id,
+		"exp": time.Now().Add(time.Hour * 8).Unix(),
+	})
+	const hmacSampleSecret = "fjsdakfljsdfklasjfksdajlfa42134jkh4j23hfdsoaj"
+	// Sign and get the complete encoded token as a string using the secret
+	tokenString, err := token.SignedString([]byte(hmacSampleSecret))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to create token"})
+		return
+	}
+
+	err = storeJWTTokenInRedis(user.Id, tokenString)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to send to Redis"})
+		return
+	}
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("Authorization", tokenString, 3600*8, "", "", false, true)
+	c.JSON(http.StatusOK, gin.H{})
+}
+
+func Validate(c *gin.Context) {
+	user, _ := c.Get("user")
+	c.JSON(http.StatusOK, gin.H{
+		"message": user,
+	})
 }
 
 func (ctrl *UserController) SetImage(c *gin.Context) {
@@ -161,4 +191,15 @@ func (ctrl *UserController) SetImage(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Image uploaded successfully"})
+}
+
+func storeJWTTokenInRedis(id int, token string) error {
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379", // Redis server address
+		Password: "",               // No password set
+		DB:       1,                // Default DB
+	})
+	ctx := context.Background()
+	err := redisClient.Set(ctx, strconv.Itoa(id), token, 8*time.Hour).Err() // Token expires in 24 hours
+	return err
 }
