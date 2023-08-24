@@ -13,7 +13,7 @@ type IUserRepository interface {
 	Delete(userID int) error
 	Get(userID int) (*models.User, error)
 	GetUserByName(Name string) (*models.User, error)
-	UploadImage(userID int, image []byte) error
+	SetImage(userID int, image []byte) error
 }
 
 type UserService struct {
@@ -88,6 +88,7 @@ func (svc *UserService) ComparePasswordHash(hash, pass string) error {
 
 	return nil
 }
-func (svc *UserService) UploadImage(userID int, image []byte) error {
-	return svc.userRepo.UploadImage(userID, image)
+
+func (svc *UserService) SetImage(userID int, image []byte) error {
+	return svc.userRepo.SetImage(userID, image)
 }

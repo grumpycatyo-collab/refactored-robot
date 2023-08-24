@@ -16,7 +16,7 @@ type IUserService interface {
 	Get(userID int) (*models.User, error)
 	GetUserByName(Name string) (*models.User, error)
 	ComparePasswordHash(hash, pass string) error
-	UploadImage(userID int, image []byte) error
+	SetImage(userID int, image []byte) error
 }
 
 type UserController struct {
@@ -43,7 +43,7 @@ func (ctrl *UserController) Register(c *gin.Context) {
 	if err != nil {
 
 		// Status 500 sau nu ?
-		c.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"error":   true,
 			"message": err.Error(),
 		})
@@ -105,9 +105,9 @@ func (ctrl *UserController) GetImage(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
-	c.Header("Content-Type", "image/jpeg") // Set the content type for the response
+
 	c.Status(http.StatusOK)
-	c.Writer.Write(user.Image)
+	c.Writer.Write([]byte(user.ImagePath))
 }
 
 func (ctrl *UserController) Login(c *gin.Context) {
@@ -139,7 +139,7 @@ func (ctrl *UserController) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
-func (ctrl *UserController) UploadImage(c *gin.Context) {
+func (ctrl *UserController) SetImage(c *gin.Context) {
 	// Parse user ID from URL parameter
 	userIDStr := c.Param("id")
 	userID, err := strconv.Atoi(userIDStr)
@@ -154,7 +154,7 @@ func (ctrl *UserController) UploadImage(c *gin.Context) {
 		return
 	}
 
-	err = ctrl.userService.UploadImage(userID, imageData)
+	err = ctrl.userService.SetImage(userID, imageData)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

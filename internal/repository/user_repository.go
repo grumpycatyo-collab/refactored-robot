@@ -1,10 +1,16 @@
 package repository
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 	"gorm.io/gorm"
+	"image/jpeg"
 	"log"
+	"os"
+	"path/filepath"
 	"refactored-robot/internal/models"
+	"time"
 )
 
 type UserRepository struct {
@@ -73,17 +79,47 @@ func (repo *UserRepository) CheckIfNameExists(name string) bool {
 	return errors.Is(err, gorm.ErrRecordNotFound)
 }
 
-func (repo *UserRepository) UploadImage(userID int, image []byte) error {
+func (repo *UserRepository) SetImage(userID int, image []byte) error {
+
 	var user models.User
 	result := repo.dbClient.First(&user, userID)
 	if result.Error != nil {
 		return result.Error
 	}
 
-	user.Image = image
+	img, err := jpeg.Decode(bytes.NewReader(image))
+	if err != nil {
+		return err
+	}
+
+	// Generate a unique filename using timestamp
+	timestamp := time.Now().Unix()
+	filename := fmt.Sprintf("user_%d_%d.jpg", userID, timestamp)
+
+	// Define the folder path to save images
+	imageFolderPath := "C:\\Users\\Max\\refactored-robot\\web\\static" // Update this with your actual path
+
+	// Create the image file
+	imagePath := filepath.Join(imageFolderPath, filename)
+	imageFile, err := os.Create(imagePath)
+	if err != nil {
+		return err
+	}
+	defer imageFile.Close()
+
+	// Write the JPEG image to the file
+	if err := jpeg.Encode(imageFile, img, nil); err != nil {
+		return err
+	}
+
+	// Update the user model with the image path
+	user.ImagePath = imagePath
 	result = repo.dbClient.Save(&user)
 	if result.Error != nil {
+		// Clean up the saved image file if database update fails
+		_ = os.Remove(imagePath)
 		return result.Error
 	}
+
 	return nil
 }
