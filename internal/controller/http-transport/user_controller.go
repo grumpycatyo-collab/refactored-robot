@@ -1,4 +1,4 @@
-package controller
+package http_transport
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"refactored-robot/internal/models"
+	"refactored-robot/utils"
 	"strconv"
 	"time"
 )
@@ -140,26 +141,29 @@ func (ctrl *UserController) Login(c *gin.Context) {
 		return
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": user.Id,
-		"exp": time.Now().Add(time.Hour * 8).Unix(),
-	})
 	const hmacSampleSecret = "fjsdakfljsdfklasjfksdajlfa42134jkh4j23hfdsoaj"
-	// Sign and get the complete encoded token as a string using the secret
-	tokenString, err := token.SignedString([]byte(hmacSampleSecret))
+	tokenString, err := utils.CreateToken(user.Id, hmacSampleSecret)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to create token"})
 		return
 	}
+	refreshToken, err := utils.CreateToken(user.Id, hmacSampleSecret)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+		return
+	}
 
-	err = storeJWTTokenInRedis(user.Id, tokenString)
+	err = storeJWTTokenInRedis(user.Id, refreshToken)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to send to Redis"})
 		return
 	}
 	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie("Authorization", tokenString, 3600*8, "", "", false, true)
-	c.JSON(http.StatusOK, gin.H{})
+
+	c.SetCookie("AccessToken", tokenString, 60*15, "/", "localhost", false, true)
+	c.SetCookie("RefreshToken", refreshToken, 3600*2, "/", "localhost", false, true)
+
+	c.JSON(http.StatusOK, gin.H{"Authorization": tokenString})
 }
 
 func Validate(c *gin.Context) {
@@ -193,6 +197,45 @@ func (ctrl *UserController) SetImage(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Image uploaded successfully"})
 }
 
+func (ctrl *UserController) RefreshAccessToken(c *gin.Context) {
+	const hmacSampleSecret = "fjsdakfljsdfklasjfksdajlfa42134jkh4j23hfdsoaj"
+	cookie, err := c.Cookie("RefreshToken")
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": "fail"})
+		return
+	}
+
+	err = utils.ValidateToken(cookie, hmacSampleSecret)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"status": "fail", "message": err.Error()})
+		return
+	}
+	UserTokenId, err := getIDFromRedisByToken(cookie)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User ID not found in Redis"})
+		return
+	}
+	user, err := ctrl.userService.Get(UserTokenId)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": user.Id,
+		"exp": time.Now().Add(time.Hour * 8).Unix(),
+	})
+
+	// Sign and get the complete encoded token as a string using the secret
+	tokenString, err := token.SignedString([]byte(hmacSampleSecret))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to create token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "access_token": tokenString})
+}
+
 func storeJWTTokenInRedis(id int, token string) error {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379", // Redis server address
@@ -200,6 +243,27 @@ func storeJWTTokenInRedis(id int, token string) error {
 		DB:       1,                // Default DB
 	})
 	ctx := context.Background()
-	err := redisClient.Set(ctx, strconv.Itoa(id), token, 8*time.Hour).Err() // Token expires in 24 hours
+	err := redisClient.Set(ctx, token, strconv.Itoa(id), 2*time.Hour).Err()
 	return err
+}
+
+func getIDFromRedisByToken(token string) (int, error) {
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       1,
+	})
+	ctx := context.Background()
+
+	idStr, err := redisClient.Get(ctx, token).Result()
+	if err != nil {
+		return 0, err
+	}
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
 }
