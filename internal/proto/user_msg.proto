@@ -5,6 +5,8 @@ option go_package="./pb";
 
 import "google/protobuf/empty.proto";
 
+
+// user_svc.proto ? trebuie acest serviciu de mutat acolo
 service UserController {
   rpc AddUser(RegisterUserRequest) returns (google.protobuf.Empty);
   rpc GetUser(GetUserRequest) returns (UserResponse);
