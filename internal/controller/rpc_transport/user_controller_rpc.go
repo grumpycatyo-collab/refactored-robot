@@ -55,6 +55,7 @@ func (ctrl *GRPCUserController) GetUser(ctx context.Context, request *pb.GetUser
 		return nil, status.Error(codes.NotFound, "User not found")
 	}
 
+	// pentru acest functional exista biblioteca json sau protojson
 	userResponse := &pb.UserResponse{
 		// Assuming you have a mapping function to convert your User model to UserResponse
 		Id:       request.Id,
@@ -79,6 +80,7 @@ func (ctrl *GRPCUserController) Login(ctx context.Context, request *pb.LoginRequ
 	name := request.Name
 	pass := request.Password
 
+	// Toata logica de mai jos trebuie sa fie in servicii
 	user, err := ctrl.userService.GetUserByName(name)
 	if err != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "Couldnt get the Name")
@@ -141,6 +143,7 @@ func (ctrl *GRPCUserController) GetImage(ctx context.Context, request *pb.GetIma
 
 func (ctrl *GRPCUserController) RefreshToken(ctx context.Context, request *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
 	//TODO implement me
+	//Aici trebuie de intors in response 'access' si 'refresh'
 	panic("implement me")
 }
 
