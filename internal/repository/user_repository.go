@@ -87,6 +87,8 @@ func (repo *UserRepository) SetImage(userID int, image []byte) error {
 		return result.Error
 	}
 
+	// Salvarea imaginii se face in servicii + ai doua apeluri la baza de date intr-o singura metoda
+	// am spus ca, fiecare metoda a repositoriului face doar o singura chestie
 	img, err := jpeg.Decode(bytes.NewReader(image))
 	if err != nil {
 		return err
