@@ -11,11 +11,15 @@ import (
 )
 
 func RequireAuth(c *gin.Context) {
+	// access token nu exista in cookie
+	// este header Authorization
 	tokenString, err := c.Cookie("AccessToken")
 	if err != nil {
 		c.AbortWithStatus(http.StatusUnauthorized)
 	}
 
+	// aici e doar validarea, ar trebui sa extragi acest functional
+	// intr-o functie aparte
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		// Don't forget to validate the alg is what you expect:
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
