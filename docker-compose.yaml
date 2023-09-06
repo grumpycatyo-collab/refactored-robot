@@ -16,6 +16,18 @@ services:
     container_name: my-redis-container
     ports:
       - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3.10.7-management
+
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+  mongo:
+    container_name: mongo
+    image: mongo
+    ports:
+      - "27017:27017"
 volumes:
   db:
     driver: local

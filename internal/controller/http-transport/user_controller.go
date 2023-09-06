@@ -9,6 +9,7 @@ import (
 	"github.com/golang-jwt/jwt"
 	"io/ioutil"
 	"net/http"
+	"refactored-robot/internal/controller/rabbitmq_transport"
 	"refactored-robot/internal/models"
 	"refactored-robot/utils"
 	"strconv"
@@ -54,6 +55,9 @@ func (ctrl *UserController) Register(c *gin.Context) {
 		})
 		return
 	}
+	amqURL := "amqp://guest:guest@localhost:5672/"
+	controller, err := rabbitmq_transport.NewAMQController(amqURL)
+	controller.CreateQueueAndPublishMessage("RefreshTokenHandlerQueue", "token succsesfully refreshed")
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "successfully create an user",
@@ -158,6 +162,7 @@ func (ctrl *UserController) Login(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to send to Redis"})
 		return
 	}
+
 	c.SetSameSite(http.SameSiteLaxMode)
 
 	c.SetCookie("AccessToken", tokenString, 60*15, "/", "localhost", false, true)
