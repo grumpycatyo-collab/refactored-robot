@@ -2,6 +2,7 @@ package rpc_transport
 
 import (
 	"context"
+	"github.com/golang-jwt/jwt"
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -10,7 +11,9 @@ import (
 	"io/ioutil"
 	"refactored-robot/internal/models"
 	"refactored-robot/internal/pb"
+	"refactored-robot/internal/service"
 	"refactored-robot/utils"
+	"time"
 	//"refactored-robot/internal/pb"
 )
 
@@ -21,6 +24,7 @@ type IUserService interface {
 	GetUserByName(Name string) (*models.User, error)
 	ComparePasswordHash(hash, pass string) error
 	SetImage(userID int, image []byte) error
+	LoginUser(Name string, pass string) (string, string, error)
 }
 
 type GRPCUserController struct {
@@ -78,23 +82,14 @@ func (ctrl *GRPCUserController) DeleteUser(ctx context.Context, request *pb.Dele
 func (ctrl *GRPCUserController) Login(ctx context.Context, request *pb.LoginRequest) (*pb.LoginResponse, error) {
 	name := request.Name
 	pass := request.Password
-
-	user, err := ctrl.userService.GetUserByName(name)
+	access, refresh, err := ctrl.userService.LoginUser(name, pass)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "Couldnt get the Name")
+		return nil, status.Error(codes.NotFound, "Couldnt find the user")
 	}
 
-	err = ctrl.userService.ComparePasswordHash(user.Password, pass)
-	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "Couldnt compare hash")
-	}
-	const hmacSampleSecret = "fjsdakfljsdfklasjfksdajlfa42134jkh4j23hfdsoaj"
-	token, err := utils.CreateToken(user.Id, hmacSampleSecret) // You need to define this function
-	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "Error in making token")
-	}
 	response := &pb.LoginResponse{
-		Token: token,
+		Token:        access,
+		RefreshToken: refresh,
 	}
 
 	return response, nil
@@ -140,11 +135,38 @@ func (ctrl *GRPCUserController) GetImage(ctx context.Context, request *pb.GetIma
 }
 
 func (ctrl *GRPCUserController) RefreshToken(ctx context.Context, request *pb.RefreshTokenRequest) (*pb.RefreshTokenResponse, error) {
-	//TODO implement me
-	panic("implement me")
-}
+	const hmacSampleSecret = "fjsdakfljsdfklasjfksdajlfa42134jkh4j23hfdsoaj"
+	cookie := request.RefreshToken
 
-func (ctrl *GRPCUserController) mustEmbedUnimplementedUserControllerServer() {
-	//TODO implement me
-	panic("implement me")
+	err := utils.ValidateToken(cookie, hmacSampleSecret)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Error validating cookie")
+	}
+
+	UserTokenId, err := service.GetIDFromRedisByToken(cookie)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "User not found in Redis")
+	}
+	user, err := ctrl.userService.Get(UserTokenId)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Not found")
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": user.Id,
+		"exp": time.Now().Add(time.Hour * 8).Unix(),
+	})
+
+	// Sign and get the complete encoded token as a string using the secret
+	tokenString, err := token.SignedString([]byte(hmacSampleSecret))
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Token not Found")
+	}
+
+	RefreshTokenResponse := &pb.RefreshTokenResponse{
+		// Assuming you have a mapping function to convert your User model to UserResponse
+		Token: tokenString,
+	}
+
+	return RefreshTokenResponse, nil
 }

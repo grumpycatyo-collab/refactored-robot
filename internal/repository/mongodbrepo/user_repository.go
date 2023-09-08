@@ -144,7 +144,7 @@ func (repo *UserRepository) SetImage(userID int, image []byte) error {
 
 	// Find the user by userID
 	var user models.User
-	filter := bson.M{"_id": userID}
+	filter := bson.M{"id": userID}
 	err := collection.FindOne(ctx, filter).Decode(&user)
 	if err != nil {
 		return err
@@ -168,7 +168,7 @@ func (repo *UserRepository) SetImage(userID int, image []byte) error {
 	user.ImagePath = imagePath
 
 	// Update the user in the MongoDB collection
-	update := bson.M{"$set": bson.M{"imagePath": user.ImagePath}}
+	update := bson.M{"$set": bson.M{"imagepath": user.ImagePath}}
 	_, err = collection.UpdateOne(ctx, filter, update)
 	if err != nil {
 		// Clean up the saved image file if the database update fails
