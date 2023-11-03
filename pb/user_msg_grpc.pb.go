@@ -25,8 +25,11 @@ const (
 	UserController_DeleteUser_FullMethodName   = "/rpc_transport.UserController/DeleteUser"
 	UserController_Login_FullMethodName        = "/rpc_transport.UserController/Login"
 	UserController_UploadImage_FullMethodName  = "/rpc_transport.UserController/UploadImage"
+	UserController_AddAdmin_FullMethodName     = "/rpc_transport.UserController/AddAdmin"
+	UserController_DeleteAdmin_FullMethodName  = "/rpc_transport.UserController/DeleteAdmin"
 	UserController_GetImage_FullMethodName     = "/rpc_transport.UserController/GetImage"
 	UserController_RefreshToken_FullMethodName = "/rpc_transport.UserController/RefreshToken"
+	UserController_GetRoles_FullMethodName     = "/rpc_transport.UserController/GetRoles"
 )
 
 // UserControllerClient is the client API for UserController service.
@@ -38,8 +41,11 @@ type UserControllerClient interface {
 	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	UploadImage(ctx context.Context, in *UploadImageRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	AddAdmin(ctx context.Context, in *AddAdminRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	DeleteAdmin(ctx context.Context, in *DeleteAdminRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetImage(ctx context.Context, in *GetImageRequest, opts ...grpc.CallOption) (*GetImageResponse, error)
 	RefreshToken(ctx context.Context, in *RefreshTokenRequest, opts ...grpc.CallOption) (*RefreshTokenResponse, error)
+	GetRoles(ctx context.Context, in *GetRolesRequest, opts ...grpc.CallOption) (*RolesResponse, error)
 }
 
 type userControllerClient struct {
@@ -95,6 +101,24 @@ func (c *userControllerClient) UploadImage(ctx context.Context, in *UploadImageR
 	return out, nil
 }
 
+func (c *userControllerClient) AddAdmin(ctx context.Context, in *AddAdminRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, UserController_AddAdmin_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userControllerClient) DeleteAdmin(ctx context.Context, in *DeleteAdminRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, UserController_DeleteAdmin_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *userControllerClient) GetImage(ctx context.Context, in *GetImageRequest, opts ...grpc.CallOption) (*GetImageResponse, error) {
 	out := new(GetImageResponse)
 	err := c.cc.Invoke(ctx, UserController_GetImage_FullMethodName, in, out, opts...)
@@ -113,6 +137,15 @@ func (c *userControllerClient) RefreshToken(ctx context.Context, in *RefreshToke
 	return out, nil
 }
 
+func (c *userControllerClient) GetRoles(ctx context.Context, in *GetRolesRequest, opts ...grpc.CallOption) (*RolesResponse, error) {
+	out := new(RolesResponse)
+	err := c.cc.Invoke(ctx, UserController_GetRoles_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserControllerServer is the server API for UserController service.
 // All implementations must embed UnimplementedUserControllerServer
 // for forward compatibility
@@ -122,8 +155,11 @@ type UserControllerServer interface {
 	DeleteUser(context.Context, *DeleteUserRequest) (*emptypb.Empty, error)
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 	UploadImage(context.Context, *UploadImageRequest) (*emptypb.Empty, error)
+	AddAdmin(context.Context, *AddAdminRequest) (*emptypb.Empty, error)
+	DeleteAdmin(context.Context, *DeleteAdminRequest) (*emptypb.Empty, error)
 	GetImage(context.Context, *GetImageRequest) (*GetImageResponse, error)
 	RefreshToken(context.Context, *RefreshTokenRequest) (*RefreshTokenResponse, error)
+	GetRoles(context.Context, *GetRolesRequest) (*RolesResponse, error)
 	mustEmbedUnimplementedUserControllerServer()
 }
 
@@ -146,11 +182,20 @@ func (UnimplementedUserControllerServer) Login(context.Context, *LoginRequest) (
 func (UnimplementedUserControllerServer) UploadImage(context.Context, *UploadImageRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UploadImage not implemented")
 }
+func (UnimplementedUserControllerServer) AddAdmin(context.Context, *AddAdminRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddAdmin not implemented")
+}
+func (UnimplementedUserControllerServer) DeleteAdmin(context.Context, *DeleteAdminRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteAdmin not implemented")
+}
 func (UnimplementedUserControllerServer) GetImage(context.Context, *GetImageRequest) (*GetImageResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetImage not implemented")
 }
 func (UnimplementedUserControllerServer) RefreshToken(context.Context, *RefreshTokenRequest) (*RefreshTokenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RefreshToken not implemented")
+}
+func (UnimplementedUserControllerServer) GetRoles(context.Context, *GetRolesRequest) (*RolesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRoles not implemented")
 }
 func (UnimplementedUserControllerServer) mustEmbedUnimplementedUserControllerServer() {}
 
@@ -255,6 +300,42 @@ func _UserController_UploadImage_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserController_AddAdmin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserControllerServer).AddAdmin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserController_AddAdmin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserControllerServer).AddAdmin(ctx, req.(*AddAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserController_DeleteAdmin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteAdminRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserControllerServer).DeleteAdmin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserController_DeleteAdmin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserControllerServer).DeleteAdmin(ctx, req.(*DeleteAdminRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _UserController_GetImage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetImageRequest)
 	if err := dec(in); err != nil {
@@ -291,6 +372,24 @@ func _UserController_RefreshToken_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserController_GetRoles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRolesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserControllerServer).GetRoles(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserController_GetRoles_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserControllerServer).GetRoles(ctx, req.(*GetRolesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserController_ServiceDesc is the grpc.ServiceDesc for UserController service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -319,12 +418,24 @@ var UserController_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _UserController_UploadImage_Handler,
 		},
 		{
+			MethodName: "AddAdmin",
+			Handler:    _UserController_AddAdmin_Handler,
+		},
+		{
+			MethodName: "DeleteAdmin",
+			Handler:    _UserController_DeleteAdmin_Handler,
+		},
+		{
 			MethodName: "GetImage",
 			Handler:    _UserController_GetImage_Handler,
 		},
 		{
 			MethodName: "RefreshToken",
 			Handler:    _UserController_RefreshToken_Handler,
+		},
+		{
+			MethodName: "GetRoles",
+			Handler:    _UserController_GetRoles_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

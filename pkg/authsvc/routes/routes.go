@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"gateway/pb"
-
 	"github.com/gin-gonic/gin"
-
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"io/ioutil"
@@ -86,6 +84,70 @@ func GetUser(ctx *gin.Context, c pb.UserControllerClient) {
 	ctx.JSON(http.StatusOK, httpResponse)
 }
 
+func GetRoles(ctx *gin.Context, c pb.UserControllerClient) {
+	userID := ctx.Param("id") // Assuming the user ID is passed as a URL parameter
+
+	// Create a gRPC client using the provided connection
+
+	// Convert userID to integer
+	intUserID, err := strconv.Atoi(userID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	// Call the gRPC GetUser method
+	roleResponse, err := c.GetRoles(context.Background(), &pb.GetRolesRequest{
+		Id: int32(intUserID),
+	})
+
+	if err != nil {
+		grpcStatus, _ := status.FromError(err)
+		if grpcStatus.Code() == codes.NotFound {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "Role not found"})
+			return
+		}
+
+		ctx.JSON(http.StatusBadGateway, gin.H{"error": "Failed to retrieve role"})
+		return
+	}
+
+	// Convert the gRPC UserResponse to the desired HTTP response format
+	httpResponse := struct {
+		Id    int32  `json:"id"`
+		Roles string `json:"roles"`
+	}{
+		Id:    roleResponse.Id,
+		Roles: roleResponse.Roles,
+	}
+
+	ctx.JSON(http.StatusOK, httpResponse)
+}
+
+func DeleteUser(ctx *gin.Context, c pb.UserControllerClient) {
+	userID := ctx.Param("id") // Assuming the user ID is passed as a URL parameter
+
+	// Create a gRPC client using the provided connection
+
+	// Convert userID to integer
+	intUserID, err := strconv.Atoi(userID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	// Call the gRPC GetUser method
+	res, err := c.DeleteUser(context.Background(), &pb.DeleteUserRequest{
+		Id: int32(intUserID),
+	})
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Couldnt delete user"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
 type LoginRequestBody struct {
 	Name     string `json:"name"`
 	Password string `json:"pass"`
@@ -111,12 +173,14 @@ func Login(ctx *gin.Context, c pb.UserControllerClient) {
 
 	tokenString := res.Token
 	refreshToken := res.RefreshToken
+	role := res.Role
 	ctx.SetSameSite(http.SameSiteLaxMode)
-
-	ctx.SetCookie("AccessToken", tokenString, 60*15, "/", "localhost", false, true)
-	ctx.SetCookie("RefreshToken", refreshToken, 3600*2, "/", "localhost", false, true)
+	ctx.Writer.Header().Set("role", role)
+	ctx.Writer.Header().Set("Authorization", tokenString)
+	ctx.Writer.Header().Set("RefreshToken", refreshToken)
 
 	ctx.JSON(http.StatusOK, gin.H{"Authorization": tokenString})
+	ctx.Next()
 }
 
 func SetImage(ctx *gin.Context, c pb.UserControllerClient) {
@@ -191,4 +255,44 @@ func RefreshAccessToken(ctx *gin.Context, c pb.UserControllerClient) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"status": "success", "access_token": tokenString})
+}
+
+func AddAdmin(ctx *gin.Context, c pb.UserControllerClient) {
+	userIDStr := ctx.Param("id")
+
+	// Convert the user ID string to an integer
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid userID"})
+		return
+	}
+	res, err := c.AddAdmin(context.Background(), &pb.AddAdminRequest{Id: int32(userID)})
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Couldnt delete user"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+
+}
+
+func DeleteAdmin(ctx *gin.Context, c pb.UserControllerClient) {
+	userIDStr := ctx.Param("id")
+
+	// Convert the user ID string to an integer
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid userID"})
+		return
+	}
+
+	res, err := c.DeleteAdmin(context.Background(), &pb.DeleteAdminRequest{Id: int32(userID)})
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Couldnt delete user"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
 }

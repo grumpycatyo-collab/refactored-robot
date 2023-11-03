@@ -11,8 +11,11 @@ service UserController {
   rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty);
   rpc Login(LoginRequest) returns (LoginResponse);
   rpc UploadImage(UploadImageRequest) returns (google.protobuf.Empty);
+  rpc AddAdmin(AddAdminRequest) returns (google.protobuf.Empty);
+  rpc DeleteAdmin(DeleteAdminRequest) returns(google.protobuf.Empty);
   rpc GetImage(GetImageRequest) returns (GetImageResponse);
   rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+  rpc GetRoles(GetRolesRequest) returns (RolesResponse);
 }
 
 message User {
@@ -33,10 +36,27 @@ message UserResponse {
   string name = 2;
   string password = 3;
   string image = 4;
+  string roles = 5;
 
 }
 
 message GetUserRequest {
+  int32 id = 1;
+}
+
+message GetRolesRequest {
+  int32 id = 1;
+}
+
+message RolesResponse {
+  int32 id=1;
+  string roles =2;
+}
+message AddAdminRequest {
+  int32 id = 1;
+}
+
+message DeleteAdminRequest {
   int32 id = 1;
 }
 
@@ -52,6 +72,7 @@ message LoginRequest {
 message LoginResponse {
   string token = 1;
   string refreshToken = 2;
+  string role = 3;
 }
 
 message UploadImageRequest {
